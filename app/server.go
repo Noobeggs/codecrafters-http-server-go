@@ -51,6 +51,7 @@ func handleConnection(connection net.Conn, directory string) {
 
 	request := bytes.Split(buf, []byte("\r\n"))
 	start_line := bytes.Split(request[0], []byte(" "))
+	fmt.Printf("start_line: %v\n", start_line)
 	path := start_line[1]
 
 	if bytes.Equal(path, []byte("/")) {
@@ -66,6 +67,7 @@ func handleConnection(connection net.Conn, directory string) {
 			}
 		}
 	} else if after, found := bytes.CutPrefix(path, []byte("/files/")); found {
+		fmt.Println("/files/")
 		if bytes.Equal(start_line[0], []byte("GET")) {
 			data, err := os.ReadFile(fmt.Sprintf("%v%v", directory, string(after)))
 			if err != nil {
@@ -80,6 +82,7 @@ func handleConnection(connection net.Conn, directory string) {
 				os.Exit(1)
 			}
 		} else if bytes.Equal(start_line[0], []byte("POST")) {
+			fmt.Println("POST")
 			body := bytes.SplitN(buf, []byte("\r\n\r\n"), 1)
 			fmt.Printf("Body: %v\n", string(body[1]))
 			err := os.WriteFile(string(after), bytes.Trim(body[1], "\x00/"), 0666)
