@@ -21,14 +21,24 @@ func main() {
 		os.Exit(1)
 	}
 
-	c, err := l.Accept()
-	if err != nil {
-		fmt.Println("Error accepting connection: ", err.Error())
-		os.Exit(1)
+	defer l.Close()
+
+	for {
+		c, err := l.Accept()
+		if err != nil {
+			fmt.Println("Error accepting connection: ", err.Error())
+			os.Exit(1)
+		}
+
+		go handleConnection(c)
 	}
+}
+
+func handleConnection(connection net.Conn) {
+	defer connection.Close()
 
 	buf := make([]byte, 1024)
-	_, err = c.Read(buf)
+	_, err := connection.Read(buf)
 	if err != nil {
 		fmt.Println("Error reading data: ", err.Error())
 		os.Exit(1)
@@ -39,19 +49,19 @@ func main() {
 	path := start_line[1]
 
 	if bytes.Equal(path, []byte("/")) {
-		_, err = c.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+		_, err = connection.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
 	} else if after, found := bytes.CutPrefix(path, []byte("/echo/")); found {
 		response := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-length: %v\r\n\r\n%v", len(after), string(after))
-		_, err = c.Write([]byte(response))
+		_, err = connection.Write([]byte(response))
 	} else if bytes.Equal(path, []byte("/user-agent")) {
 		for i := 1; i < len(request); i++ {
 			if after, found := bytes.CutPrefix(request[i], []byte("User-Agent: ")); found {
 				response := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-length: %v\r\n\r\n%v", len(after), string(after))
-				_, err = c.Write([]byte(response))
+				_, err = connection.Write([]byte(response))
 			}
 		}
 	} else {
-		_, err = c.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
+		_, err = connection.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
 	}
 
 	if err != nil {
