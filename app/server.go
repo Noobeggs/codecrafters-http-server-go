@@ -81,7 +81,7 @@ func handleConnection(connection net.Conn, directory string) {
 			}
 		} else if bytes.Equal(start_line[0], []byte("POST")) {
 			body := bytes.SplitN(buf, []byte("\r\n\r\n"), 1)
-			err := os.WriteFile(string(after), body[1], 0666)
+			err := os.WriteFile(string(after), bytes.Trim(body[1], "\x00"), 0666)
 			if err != nil {
 				fmt.Println("Error writing to file: ", err.Error())
 				os.Exit(1)
