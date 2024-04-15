@@ -41,6 +41,7 @@ func main() {
 
 func handleConnection(connection net.Conn, directory string) {
 	defer connection.Close()
+	var response []byte
 
 	buf := make([]byte, 1024)
 	_, err := connection.Read(buf)
@@ -55,15 +56,13 @@ func handleConnection(connection net.Conn, directory string) {
 	path := start_line[1]
 
 	if bytes.Equal(path, []byte("/")) {
-		_, err = connection.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+		response = []byte("HTTP/1.1 200 OK\r\n\r\n")
 	} else if after, found := bytes.CutPrefix(path, []byte("/echo/")); found {
-		response := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-length: %v\r\n\r\n%v", len(after), string(after))
-		_, err = connection.Write([]byte(response))
+		response = []byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-length: %v\r\n\r\n%v", len(after), string(after)))
 	} else if bytes.Equal(path, []byte("/user-agent")) {
 		for i := 1; i < len(request); i++ {
 			if after, found := bytes.CutPrefix(request[i], []byte("User-Agent: ")); found {
-				response := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-length: %v\r\n\r\n%v", len(after), string(after))
-				_, err = connection.Write([]byte(response))
+				response = []byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-length: %v\r\n\r\n%v", len(after), string(after)))
 			}
 		}
 	} else if after, found := bytes.CutPrefix(path, []byte("/files/")); found {
@@ -72,14 +71,9 @@ func handleConnection(connection net.Conn, directory string) {
 			data, err := os.ReadFile(fmt.Sprintf("%v%v", directory, string(after)))
 			if err != nil {
 				fmt.Println("Error reading file: ", err.Error())
-				_, err = connection.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
+				response = []byte("HTTP/1.1 404 Not Found\r\n\r\n")
 			} else {
-				response := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-length: %v\r\n\r\n%v", len(data), string(data))
-				_, err = connection.Write([]byte(response))
-			}
-			if err != nil {
-				fmt.Println("Error writing data: ", err.Error())
-				os.Exit(1)
+				response = []byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-length: %v\r\n\r\n%v", len(data), string(data)))
 			}
 		} else if bytes.Equal(start_line[0], []byte("POST")) {
 			fmt.Println("POST")
@@ -90,15 +84,14 @@ func handleConnection(connection net.Conn, directory string) {
 				fmt.Println("Error writing to file: ", err.Error())
 				os.Exit(1)
 			} else {
-				_, err = connection.Write([]byte("HTTP/1.1 201 Created\r\n\r\n"))
-				if err != nil {
-					fmt.Println("Error writing data: ", err.Error())
-				}
+				response = []byte("HTTP/1.1 201 Created\r\n\r\n")
 			}
 		}
 	} else {
-		_, err = connection.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
+		response = []byte("HTTP/1.1 404 Not Found\r\n\r\n")
 	}
+
+	_, err = connection.Write(response)
 
 	if err != nil {
 		fmt.Println("Error writing data: ", err.Error())
