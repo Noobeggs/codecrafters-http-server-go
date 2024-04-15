@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 
 	// Uncomment this block to pass the first stage
@@ -12,6 +13,8 @@ import (
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
+
+	var dirFlag = flag.String("directory", "", "Specify directory of files")
 
 	// Uncomment this block to pass the first stage
 	//
@@ -30,11 +33,11 @@ func main() {
 			os.Exit(1)
 		}
 
-		go handleConnection(c)
+		go handleConnection(c, *dirFlag)
 	}
 }
 
-func handleConnection(connection net.Conn) {
+func handleConnection(connection net.Conn, directory string) {
 	defer connection.Close()
 
 	buf := make([]byte, 1024)
@@ -59,6 +62,18 @@ func handleConnection(connection net.Conn) {
 				response := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-length: %v\r\n\r\n%v", len(after), string(after))
 				_, err = connection.Write([]byte(response))
 			}
+		}
+	} else if after, found := bytes.CutPrefix(path, []byte("/files/")); found {
+		data, err := os.ReadFile(fmt.Sprintf("%v%v", directory, string(after)))
+		if err != nil {
+			_, err = connection.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
+		} else {
+			response := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-length: %v\r\n\r\n%v", len(data), string(data))
+			_, err = connection.Write([]byte(response))
+		}
+		if err != nil {
+			fmt.Println("Error writing data: ", err.Error())
+			os.Exit(1)
 		}
 	} else {
 		_, err = connection.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
