@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+
 	// Uncomment this block to pass the first stage
 	"net"
 	"os"
@@ -25,9 +27,25 @@ func main() {
 		os.Exit(1)
 	}
 
-	_, err = c.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+	buf := make([]byte, 1024)
+	_, err = c.Read(buf)
 	if err != nil {
 		fmt.Println("Error reading data: ", err.Error())
+		os.Exit(1)
+	}
+
+	request := bytes.Split(buf, []byte("\r\n"))
+	start_line := bytes.Split(request[0], []byte(" "))
+	path := start_line[1]
+
+	if bytes.Equal(path, []byte("/")) {
+		_, err = c.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+	} else {
+		_, err = c.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
+	}
+
+	if err != nil {
+		fmt.Println("Error writing data: ", err.Error())
 		os.Exit(1)
 	}
 }
