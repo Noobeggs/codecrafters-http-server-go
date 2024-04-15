@@ -66,6 +66,7 @@ func handleConnection(connection net.Conn, directory string) {
 	} else if after, found := bytes.CutPrefix(path, []byte("/files/")); found {
 		data, err := os.ReadFile(fmt.Sprintf("%v%v", directory, string(after)))
 		if err != nil {
+			fmt.Println("Error reading file: ", err.Error())
 			_, err = connection.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
 		} else {
 			response := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-length: %v\r\n\r\n%v", len(data), string(data))
