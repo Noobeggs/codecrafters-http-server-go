@@ -43,6 +43,13 @@ func main() {
 	} else if after, found := bytes.CutPrefix(path, []byte("/echo/")); found {
 		response := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-length: %v\r\n\r\n%v", len(after), string(after))
 		_, err = c.Write([]byte(response))
+	} else if bytes.Equal(path, []byte("/user-agent")) {
+		for i := 1; i < len(request); i++ {
+			if after, found := bytes.CutPrefix(request[i], []byte("User-Agent: ")); found {
+				response := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-length: %v\r\n\r\n%v", len(after), string(after))
+				_, err = c.Write([]byte(response))
+			}
+		}
 	} else {
 		_, err = c.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
 	}
