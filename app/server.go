@@ -41,7 +41,7 @@ func main() {
 	if bytes.Equal(path, []byte("/")) {
 		_, err = c.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
 	} else if after, found := bytes.CutPrefix(path, []byte("/echo/")); found {
-		response := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-length: 3\r\n\r\n%v", after)
+		response := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-length: %v\r\n\r\n%v", len(after), after)
 		_, err = c.Write([]byte(response))
 	} else {
 		_, err = c.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
