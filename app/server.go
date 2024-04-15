@@ -85,7 +85,7 @@ func handleConnection(connection net.Conn, directory string) {
 			fmt.Println("POST")
 			body := bytes.SplitN(buf, []byte("\r\n\r\n"), 2)
 			fmt.Printf("Body: %v\n", string(body[1]))
-			err := os.WriteFile(fmt.Sprintf("%v%v", directory, string(after)), body[1], 0666)
+			err := os.WriteFile(fmt.Sprintf("%v%v", directory, string(after)), bytes.Trim(body[1], "\x00"), 0666)
 			if err != nil {
 				fmt.Println("Error writing to file: ", err.Error())
 				os.Exit(1)
