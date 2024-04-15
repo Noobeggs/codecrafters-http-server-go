@@ -15,6 +15,7 @@ func main() {
 	fmt.Println("Logs from your program will appear here!")
 
 	var dirFlag = flag.String("directory", "", "Specify directory of files")
+	fmt.Println("Directory: %v", dirFlag)
 
 	// Uncomment this block to pass the first stage
 	//
